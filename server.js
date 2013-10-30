@@ -7,10 +7,9 @@ var jsonTester = {
         if (/^[\],:{}\s]*$/.test(text.replace(/\\["\\\/bfnrtu]/g, '@').replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').replace(/(?:^|:|,)(?:\s*\[)+/g, ''))) {
             //the json is ok
             return true;
-        } else {
-          //the json is not ok
-          return false
-      }
+        }
+        
+        return false;
     }
 };
 
@@ -18,93 +17,84 @@ var jsonTester = {
 // process.env.PORT stores the port number for node, but if it is
 // not defined we define it ourselved and use that port instead.
 if (process.env.PORT === undefined || process.env.PORT === null) {
-	process.env.PORT = 2000;
+    process.env.PORT = 2000;
 }
 var users = {};
 var chat_server = sockjs.createServer();
 var http_server = http.createServer();
-chat_server.installHandlers(http_server, {prefix: '/chat', response_limit: 4096});
+chat_server.installHandlers(http_server, {
+    prefix: '/chat',
+    response_limit: 4096
+});
 http_server.listen(process.env.PORT);
 
 http_server.on('request', function(request, response) {
-	var url = require('url').parse(request.url);
+        var url = require('url').parse(request.url);
 
-	console.log("Requested URL is: ", url.href);
+        console.log("Requested URL is: ", url.href);
 
-	// response.writeHead(200, {"Content-Type": "text/plain; charset=UTF-8"});
-	if (url.href == '/') {
-		var html = fs.readFileSync('index.html', 'utf8', function(error) {
-			if (error) throw error;
-		});
-		//console.log(html);
-		// response.writeHead(200, {"Content-Type": "text/html; charset=UTF-8"});
-		response.write(html);
-		response.end();
-	} else if (url.href != '/chat') {
+        // response.writeHead(200, {"Content-Type": "text/plain; charset=UTF-8"});
+        if (url.href === '/') {
+                var html = fs.readFileSync('index.html', 'utf8', function(error) {
+                        if (error) { 
+                throw error; 
+            }
+                });
+                // console.log(html);
+                response.writeHead(200, {"Content-Type": "text/html; charset=UTF-8"});
+                response.write(html);
+                response.end();
+        } else if (url.href !== '/chat') {
         var filename = url.pathname.substring(1); 
-        var type;
-        switch(filename.substring(filename.lastIndexOf(".")+1)) {
-            case "html":
-            case "htm":
-                type = "text/html; charset=UTF-8";
-                break;
-            case "js":
-                type = "application/javascript; charset=UTF-8";
-                break;
-            case "css":
-                type = "text/css; charset=UTF-8";
-                break;
-            case "txt":
-                type = "text/plain; charset=UTF-8";
-                break;
-            case "manifest":
-                type = "text/cache-manifest; charset=UTF-8";
-                break;
-            default:
-                type = "application/octet-stream";
-                break;
-        }
+        // var type;
         
         fs.readFile(filename, function(err, content) {
             if (err) { // If we couldn't read the file for some reason
-                // response.writeHead(404, {
+                //response.writeHead(404, {
                 //     // Send a 404 Not Found status
                 //     "Content-Type": "text/html; charset=UTF-8"});
                 // response.write(err.message); // Simple error message body
-                response.write("<h2>404 : Resource Not Found</h2>")
+                response.write("<h2>404 : Resource Not Found</h2>");
                 response.end();
                 // Done
             } else {
                 // Otherwise, if the file was read successfully.
-                // response.writeHead(200, // Set the status code and MIME type
-                // {"Content-Type": type});
+                //response.writeHead(200, // Set the status code and MIME type
+                //{"Content-Type": type});
                 response.write(content); // Send file contents as response body
                 response.end();
                 // And we're done
             }
         });
-	}
+        }
 });
 
 function sendError(connection, code, message) {
-    var errorCode = code;
-    var errorMessage = message;
-    var message = {
+    var mes = {
         "event": "error",
         "data": {
-            "errorCode": errorCode,
-            "errMessage": errorMessage
+            "errorCode": code,
+            "errMessage": message
         }
     };
-    
-    connection.write(JSON.stringify(message));
+
+    connection.write(JSON.stringify(mes));
+}
+
+function getConnection(destination) {
+    for (var user in users) {
+        if (users[user].id === destination) {
+            return users[user].userconnection;
+        }
+    }
 }
 
 chat_server.on('connection', function(connection) {
-	console.log("conection received from: ", connection.remoteAddress);
-	console.log("With port number: ", connection.remotePort);
+        console.log("conection received from: ", connection.remoteAddress);
+        console.log("With port number: ", connection.remotePort);
+        console.log(connection.remoteAddress + ":" + connection.remotePort);
 
-	connection.on('data', function(request) {
+        connection.on('data', function(request) {
         if (request === null || !jsonTester.test(request)) {
             console.log(request + " from " + connection.remoteAddress + ":" + connection.remotePort);
             sendError(connection, 400, "Server couldn't process request");
@@ -166,7 +156,6 @@ chat_server.on('connection', function(connection) {
                         var secs = today.getSeconds();
                         if(dd<10){dd='0'+dd} if(mm<10){mm='0'+mm} today = mm+'/'+dd+'/'+yyyy;
                         var fullDate ="at "+dd+"/"+mm+"/"+yyyy+" "+hr+":"+mins+":"+secs;
-		                
                         
                         var responseMessage = message.data.message;
                         responseMessage += " " + fullDate;
@@ -174,19 +163,9 @@ chat_server.on('connection', function(connection) {
                         
                         console.log(responseMessage);
                         
-                        var conn;
+                        var conn = getConnection(destination);
                         
-                        var u = function() {
-                            for (var user in users) {
-                                if (users[user].id == destination) {
-                                    conn = users[user].userconnection;
-                                }
-                            }
-                        };
-                        
-                        u();
-                        
-                        var r = {
+                        var response = {
                             "event": "message",
                             "data": {
                                 "message" : responseMessage,
@@ -194,7 +173,7 @@ chat_server.on('connection', function(connection) {
                             }
                         };
                         
-                        conn.write(JSON.stringify(r));
+                        conn.write(JSON.stringify(response));
                     } else {
                         sendError(connection, 406, "Found no message to send");
                     }
@@ -202,19 +181,22 @@ chat_server.on('connection', function(connection) {
                 case "requestChat":
                     var dest = message.data.destination;
                     console.log("to: ", dest);
-                    if (users[dest]) {
+                     if (users[dest].userconnection === connection) {
+                         sendError(connection,406, "can't send message to yourself.");
+                         console.log("Attempt to chat with self");
+                     } else if (users[dest]) {
+                         
+                        var destination = users[dest];
+                        console.log("user is: ", destination);
                         
-                        var user = users[dest];
-                        console.log("user is: ", user);
-                        var destination = user;     // set global variable for use with message
                         console.log("request to connect to: ", destination);
-                        var r = {
+                        var response = {
                             "event" : "request ok",
                             "data" : {
                                 "userId": destination.id
                             }
                         };
-                        connection.write(JSON.stringify(r));
+                        connection.write(JSON.stringify(response));
                     } else {
                         sendError(connection, 400, "Server couldn't process request");
                     }
@@ -223,7 +205,7 @@ chat_server.on('connection', function(connection) {
                     sendError(connection, 400, "Server couldn't process request");
                     break;
             }
-		}
+                }
     });
     
     // here we simply dereference the connection from the users list

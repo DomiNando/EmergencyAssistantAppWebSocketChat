@@ -10,6 +10,7 @@ var $requestButton = $("#requestButton");
 var $messages = $("#messages");
 var $message = $("#errand");
 var $sendButton = $("#send");
+var $closeChat = $("#closeChat");
 
 var myUserName;
 
@@ -24,6 +25,15 @@ var chat = {
         chatServer.onopen = function() {
             console.log('open');
             chat.createEvents(chatServer);
+        };
+        
+        chatServer.onclose = function() {
+        	console.log('close');
+        	$submitButton.off('click');
+        	$requestButton.off('click');
+        	$closeChat.off('click');
+        	$sendButton.off('click');
+        	chat.start();
         };
         
         $("section").hide();
@@ -84,6 +94,12 @@ var chat = {
             };
             
             chatServer.send(JSON.stringify(message));
+        });
+        
+        $closeChat.click(function() {
+        	chatServer.close();
+        	$("section").hide();
+        	$login.show();
         });
         
         $sendButton.click(function() {

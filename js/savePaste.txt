@@ -1,12 +1,12 @@
 var message = JSON.parse(request);
-		var eventType = message.event;
-		console.log("Event Type: ": eventType)
-		
-		switch (eventType) {
-		    case "new user":
-		        break;
-		    case "message":
-		        break;
+                var eventType = message.event;
+                console.log("Event Type: ": eventType)
+                
+                switch (eventType) {
+                    case "new user":
+                        break;
+                    case "message":
+                        break;
             case "requestChat":
                 break;
             default:
@@ -22,4 +22,4 @@ var message = JSON.parse(request);
                 
                 connection.write(JSON.stringify(message));
                 break;
-		}
+                }
