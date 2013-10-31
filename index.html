@@ -14,13 +14,19 @@
                 <button id="requestButton">Start Chat</button>
             </section>
             <section id="chat">
-                <div id="messages"></div>
-                <input type="text" id="errand"></input>
+            <div id="chatwindow">
+            	<div id="messagewindow">
+               		<div id="messages"></div>
+                	<input type="text" id="errand"></input>
+                </div>
+            <div id="inputcontainer">    
                 <button id="send">Send</button>
                 <button id="closeChat">Close Chat</button>
+            </div>
             </section>
         </body>
         <script src="http://cdn.sockjs.org/sockjs-0.3.min.js"></script>
         <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
         <script src="/js/index.js"></script>
+        <link href="chat.css" rel="stylesheet">
 </html>
